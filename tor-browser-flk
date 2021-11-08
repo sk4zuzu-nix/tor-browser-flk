@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+: "${TOR_HOME:=$HOME/.local/share/tor-browser-flk}"
+: "${TOR_PROFILE:=$TOR_HOME/TorBrowser/Data/Browser/profile.default}"
+
+set -o errexit -o nounset
+
+which dirname install realpath tee xargs
+
+SELF=$(realpath "$0" | xargs dirname)
+
+install -d "$TOR_HOME" "$TOR_PROFILE"
+
+[[ ! -f "$TOR_PROFILE/prefs.js" ]] && tee "$TOR_PROFILE/prefs.js" <<EOF
+user_pref("extensions.torlauncher.tordatadir_path", "$TOR_HOME/TorBrowser/Data/Tor");
+user_pref("extensions.torlauncher.torrc-defaults_path", "$SELF/TorBrowser/Data/Tor/torrc-defaults");
+user_pref("extensions.torlauncher.tor_path", "$SELF/TorBrowser/Tor/tor");
+user_pref("extensions.torlauncher.control_port_use_ipc", true);
+user_pref("extensions.torlauncher.socks_port_use_ipc", true);
+EOF
+
+cd "$SELF/" && HOME="$TOR_HOME" ./firefox.real -g \
+    --class "Tor Browser" \
+    --no-remote \
+    --profile "$TOR_PROFILE" \
+    "$@"
